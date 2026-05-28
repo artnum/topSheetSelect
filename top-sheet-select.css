@@ -1,0 +1,112 @@
+.top-sheet-container {
+    background-color: white;
+    border: 1px solid black;
+    border-top: 1px solid transparent;
+    padding: 5px;
+    display: grid;
+    grid-template-rows: max-content 1fr;
+    grid-template-columns: 1fr;
+    box-shadow: 6px 6px 6px lightgray;
+    box-sizing: border-box;
+}
+
+.top-sheet-data-node {
+    box-sizing: border-box;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.top-sheet-input {
+    font-size: 28px;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 5px;
+    margin: 5px;
+}
+
+.top-sheet-sizable-node {
+    z-index: 99999;
+    position: fixed;
+    background-color: white;
+    top: var(--tss-top);
+    left: var(--tss-left);
+}
+
+.top-sheet-sizable-width-node {
+    box-sizing: border-box;
+    max-width: var(--tss-width);
+    min-width: var(--tss-width);
+    width: var(--tss-width);
+}
+
+.top-sheet-sizable-height-node {
+    box-sizing: border-box;
+    max-height: var(--tss-height);
+    min-height: var(--tss-height);
+    height: var(--tss-height);
+}
+.top-sheet-item:hover, .top-sheet-item:active {
+    border: 1px dotted black;
+}
+
+.top-sheet-item, .top-sheet-item-separator {
+    box-sizing: border-box;
+    min-width: 0;
+    width: 100%;
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    min-height: 58px;
+    padding: 5px;
+}
+
+.top-sheet-item-separator {
+    cursor: default;
+    min-height: 24px;
+    font-weight: bold;
+    font-size: 0.8em;
+    background-color: lightgray;
+}
+
+.top-sheet-item.selected {
+    background-color: black;
+    color: white;
+}
+
+.top-sheet-opacity-node {
+    z-index: 99998;
+    width: 100vw;
+    height: 100vh;
+    backdrop-filter: blur(2px);
+    top: 0px;
+    left: 0px;
+    position: fixed;
+    pointer-events: none;
+    user-select: none;
+    touch-action: none;
+}
+
+.selectInput {
+    border: 2px solid black;
+    padding: 3px;
+    min-height: 1.5em;
+    line-height: 1.5;
+}
+.selectInput .label {
+    display: block;
+    font-size: 0.8em;
+}
+
+.selectInput .value:empty {
+    border-bottom: 1px dotted black;
+    min-height: 1.5em;
+    line-height: 1.5;
+}
+
+.selectInput .value {
+    border-bottom: 1px dotted transparent;
+    display: block;
+    font-size: 1em;
+    font-weight: bold;
+}
