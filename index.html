@@ -88,11 +88,14 @@ porta maximus.</p>
         import TopSheetSelect from "./top-sheet-select.js"
         class DataStore {
             data = [
+                {is_sep: true, displayName: 'Person'},
+                {value: 'p1', displayName: 'Jean Müller', filterValue: 'Jean Müller'},
+                {value: 'p2', displayName: 'Paul Mueller', filterValue: 'Jean Mueller'},
                 {is_sep: true, displayName: 'Processus'},
-                {value: 'tr_1', displayName: '<span style="border: 1px solid white; background-color: yellow; width: 2ch; height: 2ex; display: inline-block; margin-right: 1ch;">&nbsp;</span>Production'},
-                {value: 'tr_2', displayName: '<span style="border: 1px solid white; background-color: blue; width: 2ch; height: 2ex; display: inline-block; margin-right: 1ch;">&nbsp;</span>Montage'},
-                {value: 'tr_3', displayName: '<span style="border: 1px solid white; background-color: purple; width: 2ch; height: 2ex; display: inline-block; margin-right: 1ch;">&nbsp;</span>Garantie'},
-                {value: 'tr_4', displayName: '<span style="border: 1px solid white; background-color: red; width: 2ch; height: 2ex; display: inline-block; margin-right: 1ch;">&nbsp;</span>Bureau'},
+                {value: 'tr_1', displayName: '<span style="border: 1px solid white; background-color: yellow; width: 2ch; height: 2ex; display: inline-block; margin-right: 1ch;">&nbsp;</span>Production', filterValue: 'Production'},
+                {value: 'tr_2', displayName: '<span style="border: 1px solid white; background-color: blue; width: 2ch; height: 2ex; display: inline-block; margin-right: 1ch;">&nbsp;</span>Montage', filterValue: 'Montage'},
+                {value: 'tr_3', displayName: '<span style="border: 1px solid white; background-color: purple; width: 2ch; height: 2ex; display: inline-block; margin-right: 1ch;">&nbsp;</span>Garantie', filterValue: 'Garantie'},
+                {value: 'tr_4', displayName: '<span style="border: 1px solid white; background-color: red; width: 2ch; height: 2ex; display: inline-block; margin-right: 1ch;">&nbsp;</span>Bureau', filterValue: 'Bureau'},
                 {is_sep: true, displayName: 'Travail'},
                 {value: '1', displayName: '1000 de la Gauchetière', filterValue: '1000_de_la_gauchetiere'},
                 {value: '2', displayName: '10 Hudson Yards', filterValue: '10_hudson_yards'},

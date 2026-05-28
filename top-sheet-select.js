@@ -1,4 +1,6 @@
 export default class TopSheetSelect {
+    static #idCounter = 0
+    myId = 0
     /** @type {HTMLElement} */
     triggerNode = null
     /** @type {Function} */
@@ -16,19 +18,6 @@ export default class TopSheetSelect {
     #vkeyboardResizeTimeout = null
     #eventAbortController = null
     
-    #toSearchKey(str) {
-        /* german ... */
-        return str.toLowerCase()
-            .replace(/(ae|oe|ue)/g, (match) => match[0])
-            .replace(/[äöü]/g, (match) => {
-                const map = { 'ä': 'a', 'ö': 'o', 'ü': 'u' };
-                return map[match];
-            })
-            .replace(/ß/g, 'ss')
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "");
-    }
-
     /**
      * @param {HTMLElement} triggerNode
      * @param {Function} dataLoadCallback
@@ -40,29 +29,22 @@ export default class TopSheetSelect {
         if (!(dataStore instanceof Object)) {
             throw new Error('Expect dataStore to be Object')
         }
-        /* transform into an input if it is not an input */
-        if (triggerNode.tagName != 'INPUT') {
-            Object.defineProperty(triggerNode, 'value', {
-                get: function() { return this.getAttribute('value') },
-                set: function(newValue) {
-                    if (newValue === undefined) {
-                        return this.removeAttribute('value')
-                    }
-                    return this.setAttribute('value', newValue) 
-                }
-            })
-            Object.defineProperty(triggerNode, 'name', {
-                get: function() { return this.getAttribute('name') },
-                set: function(newValue) { return this.setAttribute('name', newValue) }
-            })
-            this.#hiddenInput = document.createElement('input')
-            Object.assign(this.#hiddenInput.style, {
-                display: 'none'
-            })
-            this.#hiddenInput.name = triggerNode.name ?? triggerNode.id
-            triggerNode.parentNode.insertBefore(this.#hiddenInput, triggerNode.nextElementSibling)
-        }
+        
+        this.myId = ++TopSheetSelect.#idCounter
+        
+        
+        this.#hiddenInput = document.createElement('input')
+        Object.assign(this.#hiddenInput.style, {
+            display: 'none'
+        })
+        this.#hiddenInput.name = triggerNode.name ?? triggerNode.id
+
+        triggerNode.parentNode.insertBefore(this.#hiddenInput, triggerNode.nextElementSibling)
         this.triggerNode = triggerNode
+        this.triggerNode.setAttribute('aria-controls', `top-sheet-list-${this.myId}`)
+        this.triggerNode.setAttribute('role', 'combobox')
+        this.triggerNode.setAttribute('aria-expanded', 'false')
+        this.triggerNode.setAttribute('aria-haspopup', 'listbox')
         this.dataStore = dataStore
         this.#installEvents()
     }
@@ -134,6 +116,17 @@ export default class TopSheetSelect {
         this.#eventAbortController.abort()
     }
 
+    #markNodeSelected(node) {
+        const previousSelected = this.#domNode.querySelector('.selected')
+        if (previousSelected) {
+            previousSelected.setAttribute('aria-selected', 'false')
+            previousSelected.classList.remove('selected')
+        }
+        node.classList.add('selected')
+        node.setAttribute('aria-selected', 'true')
+        this.#domNode.firstElementChild.setAttribute('aria-activedescendant', node.id)
+    }
+
     /**
      * @param {Event} event
      */
@@ -146,16 +139,16 @@ export default class TopSheetSelect {
             domNode.appendChild(dataNode)
 
             const selectedNode = dataNode.querySelector('.selected')
-            
             this.#domNode = domNode
             this.#dataNode = dataNode
             this.#previousScrollY = window.scrollY
             this.#showing = true
-
+            this.triggerNode.setAttribute('aria-expanded', 'true')
             this.#applyDimensions(this.#computeDimensions())
             .then(_ => {
                 this.#domNode.firstElementChild.focus()
                 if (selectedNode) {
+                    this.#domNode.firstElementChild.setAttribute('aria-activedescendant', selectedNode.id)
                     this.#scrollIntoView(selectedNode)
                 }
             })
@@ -167,37 +160,44 @@ export default class TopSheetSelect {
 
     renderList() {
         const { signal } = this.#eventAbortController
-        return new Promise((resolve, reject) => {
-            const value = this.#hiddenInput ? this.#hiddenInput.value : undefined
-            this.dataStore.list()
-            .then(items => {
-                const dataNode = document.createElement('DIV')
-                dataNode.classList.add('top-sheet-data-node')
-                items.forEach(item => {
-                    const itemNode = document.createElement('DIV')
-                    if (item.is_sep) {
-                        itemNode.innerHTML = item.displayName
-                        itemNode.dataset.separator = true
-                        itemNode.classList.add('top-sheet-item-separator')
-                        dataNode.appendChild(itemNode)
-                        return
-                    }
-                    itemNode.classList.add('top-sheet-item')
-                    /* not up to us to check if it's XSS, and we should be able to
-                     * have beautiful content with color and all */
+        const value = this.#hiddenInput ? this.#hiddenInput.value : undefined
+        return this.dataStore.list()
+        .then(items => {
+            const dataNode = document.createElement('DIV')
+            dataNode.classList.add('top-sheet-data-node')
+            dataNode.id = `top-sheet-list-${this.myId}`
+            dataNode.setAttribute('role', 'listbox')
+            dataNode.setAttribute('aria-label', 'Options')
+
+            items.forEach(item => {
+                const itemNode = document.createElement('DIV')
+                if (item.is_sep) {
                     itemNode.innerHTML = item.displayName
-                    itemNode.dataset.filterValue = item.filterValue ?? item.displayName
-                    itemNode.dataset.effectiveValue = item.value
-                    if (item.value == value) {
-                        itemNode.classList.add('selected')
-                    }
+                    itemNode.dataset.separator = true
+                    itemNode.classList.add('top-sheet-item-separator')
                     dataNode.appendChild(itemNode)
-                })
-                dataNode.addEventListener('click', (event) => {
-                    this.selectItem(event)
-                }, { signal })
-                resolve(dataNode)
+                    return
+                }
+                itemNode.classList.add('top-sheet-item')
+                /* not up to us to check if it's XSS, and we should be able to
+                 * have beautiful content with color and all */
+                itemNode.innerHTML = item.displayName
+                itemNode.dataset.filterValue = item.filterValue ?? item.displayName
+                itemNode.dataset.effectiveValue = item.value
+                itemNode.id = `top-sheet-${this.myId}-item-${item.value}`
+                if (item.value == value) {
+                    itemNode.classList.add('selected')
+                    itemNode.setAttribute('aria-selected', 'true')
+                } else {
+                    itemNode.setAttribute('aria-selected', 'false')
+                }
+                itemNode.setAttribute('role', 'option')
+                dataNode.appendChild(itemNode)
             })
+            dataNode.addEventListener('click', (event) => {
+                this.selectItem(event)
+            }, { signal })
+            return dataNode
         })
     }
 
@@ -254,12 +254,9 @@ export default class TopSheetSelect {
 
     selectNext() {
         const node = this.#getNextSelectable()
+
         if (node) {
-            const previousSelected = this.#domNode.querySelector('.selected')
-            if (previousSelected) {
-                previousSelected.classList.remove('selected')
-            }
-            node.classList.add('selected')
+            this.#markNodeSelected(node)
             node.scrollIntoView()
         }
     }
@@ -287,11 +284,7 @@ export default class TopSheetSelect {
     selectPrevious() {
         const node = this.#getPreviousSelectable()
         if (node) {
-            const previousSelected = this.#domNode.querySelector('.selected')
-            if (previousSelected) {
-                previousSelected.classList.remove('selected')
-            }
-            node.classList.add('selected')
+            this.#markNodeSelected(node)
             node.scrollIntoView()
         }
     }
@@ -323,6 +316,14 @@ export default class TopSheetSelect {
             inputDomNode.setAttribute('type', 'text')
             inputDomNode.setAttribute('size', '1')
             inputDomNode.setAttribute('width', '1')
+            inputDomNode.setAttribute('aria-autocomplete', 'list')
+            inputDomNode.setAttribute('aria-controls', `top-sheet-list-${this.myId}`)
+            inputDomNode.setAttribute('aria-activedescendant', '')
+            inputDomNode.setAttribute('autocorrect' ,'off')
+            inputDomNode.setAttribute('autocapitalize', 'none')
+            inputDomNode.setAttribute('spellcheck', 'false')
+            inputDomNode.setAttribute('autocomplete', 'off')
+
             inputDomNode.addEventListener('keyup', event => {
                 switch(event.key) {
                     case 'ArrowDown': 
@@ -362,21 +363,6 @@ export default class TopSheetSelect {
                         event.preventDefault()
                         this.toggle()
                     } return
-                    case 'Home': {
-                        const currentSelected = this.#domNode.querySelector('.selected')
-                        if (currentSelected) {
-                            currentSelected.classList.remove('selected')
-                        }
-                        this.selectNext()
-                    } return
-                    case 'End': {
-                        const currentSelected = this.#domNode.querySelector('.selected')
-                        if (currentSelected) {
-                            currentSelected.classList.remove('selected')
-                        }
-                        this.selectPrevious()
-                    } return
-
                 }
             }, { signal })
 
@@ -391,6 +377,7 @@ export default class TopSheetSelect {
                 return resolve()
             }
             this.#showing = false
+            this.triggerNode.setAttribute('aria-expanded', 'false')
             window.requestAnimationFrame(() => {
                 if (this.#dataNode) { this.#dataNode.remove() }
                 if (this.#opacityNode) { this.#opacityNode.remove() } 
@@ -441,22 +428,57 @@ export default class TopSheetSelect {
         })
     }
 
+    #normalize(str) {
+        return str.toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "");
+    }
+   
+    #generate2Grams(str) {
+        const grams = []
+
+        const firstLetter = str[0]
+        const l = str.slice(1).replace(/[aeiouy]/g, '')
+
+        str =  firstLetter + l
+        for(let i = 0; i < str.length - 1; i++) {
+            grams.push(str.slice(i, i+2))
+        }
+        return grams
+    }
+
     /**
      */
     filter(text) {
         const dataNode = this.#domNode.lastElementChild
         const hideNodes = []
         const showNodes = []
+        text = this.#normalize(text)
+        const searchGrams = this.#generate2Grams(text)
+        const searchGramsSet = new Set(searchGrams)
         Array.from(dataNode.children).forEach(node => {
             if (node.dataset.separator) {
                 showNodes.push(node)
                 return
             }
-            text = this.#toSearchKey(text) 
-            const strings = String(node.dataset.filterValue).split('|')
-                .map(str => this.#toSearchKey(str))
+            let score = 0
+            
+            let v = node.dataset.filterValue 
+                    ? this.#normalize(String(node.dataset.filterValue))
+                    : this.#normalize(String(node.textContent))
 
-            if (strings.some(str => str.indexOf(text) != -1)) {
+            if (v.startsWith(text)) {
+                score = 0.8 + (text.length / 10)
+            } else if (v.includes(text)) {
+                score = 0.5 + (text.length / 10)
+            } else {
+                const gramsAvailable = this.#generate2Grams(v)
+                const commun = gramsAvailable.filter(n => searchGramsSet.has(n)).length
+                const union = new Set([...gramsAvailable, ...searchGrams]).size
+                score = commun / union
+            }
+
+            if (score  > 0.15) {
                 showNodes.push(node)
             } else {
                 hideNodes.push(node)
