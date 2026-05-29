@@ -45,6 +45,7 @@
     min-height: var(--tss-height);
     height: var(--tss-height);
 }
+
 .top-sheet-item:hover, .top-sheet-item:active {
     border: 1px dotted black;
 }
@@ -85,28 +86,4 @@
     pointer-events: none;
     user-select: none;
     touch-action: none;
-}
-
-.selectInput {
-    border: 2px solid black;
-    padding: 3px;
-    min-height: 1.5em;
-    line-height: 1.5;
-}
-.selectInput .label {
-    display: block;
-    font-size: 0.8em;
-}
-
-.selectInput .value:empty {
-    border-bottom: 1px dotted black;
-    min-height: 1.5em;
-    line-height: 1.5;
-}
-
-.selectInput .value {
-    border-bottom: 1px dotted transparent;
-    display: block;
-    font-size: 1em;
-    font-weight: bold;
 }
