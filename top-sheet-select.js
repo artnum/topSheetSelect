@@ -254,10 +254,10 @@ export default class TopSheetSelect {
     selectItem(event) {
         if (!(event.target instanceof HTMLElement)) { return }
         const item = event.target.closest('.top-sheet-item')
-        if (!item.dataset.effectiveValue) { return }
+        if (!item || !item.dataset.effectiveValue) { return }
         const value = item.dataset.effectiveValue
         this.setDisplayValue({displayName: item.innerHTML})
-        this.#hiddenInput.value = value
+        this.#hiddenInput.setAttribute('value', value)
         const changeEvent = new CustomEvent("change", { detail : { value }, bubbles: true })
         this.triggerNode.dispatchEvent(changeEvent)
         this.hide()
@@ -382,14 +382,13 @@ export default class TopSheetSelect {
                         event.preventDefault()
                         const currentSelected = this.#domNode.querySelector('.selected')
                         if (currentSelected) {
-                            this.#hiddenInput.value = currentSelected.dataset.effectiveValue
-                            const value = this.triggerNode.querySelector('.value')
-                            if (value) {
-                                value.innerHTML = currentSelected.innerHTML
+                            const value = currentSelected.dataset.effectiveValue
+                            this.#hiddenInput.setAttribute('value', value)
+                            const valueNode = this.triggerNode.querySelector('.value')
+                            if (valueNode) {
+                                valueNode.innerHTML = currentSelected.innerHTML
                             }
-                            const changeEvent = new CustomEvent("change",
-                                                                { detail: { value: currentSelected.dataset.effectiveValue},
-                                                                  bubbles: true })
+                            const changeEvent = new CustomEvent("change", { detail: { value }, bubbles: true })
                             this.triggerNode.dispatchEvent(changeEvent)
                             this.toggle()
                         }
@@ -512,7 +511,7 @@ export default class TopSheetSelect {
                 score = 0.5 + (text.length / 10)
             } else {
                 const gramsAvailable = this.#itemNGrams.get(node.id)
-                if (gramsAvailabe.length == 0) {
+                if (gramsAvailable.length == 0) {
                     score = 0
                 } else {
                     const commun = gramsAvailable.filter(n => searchGramsSet.has(n)).length
