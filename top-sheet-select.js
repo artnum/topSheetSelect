@@ -473,18 +473,18 @@ export default class TopSheetSelect {
             .replace(/[\u0300-\u036f]/g, "");
     }
    
-    #generate2Grams(str) {
+    #generate2Grams(text) {
         const grams = []
 
-        str.split(' ')
-           .forEach(str => {
-                if (str.length == 0) { return }
-                const firstLetter = str[0]
-                const l = str.slice(1).replace(/[aeiouy]/g, '')
+        text.split(' ')
+            .forEach(word => {
+                if (word.length === 0) { return }
+                const firstLetter = word[0]
+                const consonants = word.slice(1).replace(/[aeiouy]/g, '')
 
-                str =  firstLetter + l
-                for(let i = 0; i < str.length - 1; i++) {
-                    grams.push(str.slice(i, i+2))
+                const skeleton = firstLetter + consonants
+                for (let i = 0; i < skeleton.length - 1; i++) {
+                    grams.push(skeleton.slice(i, i + 2))
                 }
             })
         return grams
@@ -506,22 +506,22 @@ export default class TopSheetSelect {
             }
             let score = 0
             
-            let v = node.dataset.filterValue 
+            const normalizedValue = node.dataset.filterValue 
                     ? this.#normalize(String(node.dataset.filterValue))
                     : this.#normalize(String(node.textContent))
 
-            if (v.startsWith(text)) {
+            if (normalizedValue.startsWith(text)) {
                 score = 0.8 + (text.length / 10)
-            } else if (v.includes(text)) {
+            } else if (normalizedValue.includes(text)) {
                 score = 0.5 + (text.length / 10)
             } else {
                 const gramsAvailable = this.#itemNGrams.get(node.id)
                 if (gramsAvailable.length == 0) {
                     score = 0
                 } else {
-                    const commun = gramsAvailable.filter(n => searchGramsSet.has(n)).length
+                    const intersectionCount = gramsAvailable.filter(n => searchGramsSet.has(n)).length
                     const union = new Set([...gramsAvailable, ...searchGrams]).size
-                    score = commun / union
+                    score = intersectionCount / union
                 }
             }
 
