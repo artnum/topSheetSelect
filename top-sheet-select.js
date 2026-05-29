@@ -29,7 +29,11 @@ export default class TopSheetSelect {
         if (!(dataStore instanceof Object)) {
             throw new Error('Expect dataStore to be Object')
         }
-        
+       
+        if (triggerNode.dataset.topSheetInstalled == '1') {
+            throw new Error('Already installed on this node')
+        }
+
         this.myId = ++TopSheetSelect.#idCounter
         
         this.#hiddenInput = document.createElement('input')
@@ -39,17 +43,25 @@ export default class TopSheetSelect {
         this.#hiddenInput.name = triggerNode.name || triggerNode.id || `topSheetField-${this.myId}` 
 
         triggerNode.parentNode.insertBefore(this.#hiddenInput, triggerNode.nextElementSibling)
+
         this.triggerNode = triggerNode
         this.triggerNode.setAttribute('aria-controls', `top-sheet-list-${this.myId}`)
         this.triggerNode.setAttribute('role', 'combobox')
         this.triggerNode.setAttribute('aria-expanded', 'false')
         this.triggerNode.setAttribute('aria-haspopup', 'listbox')
+        this.triggerNode.dataset.topSheetInstalled = '1'
+        
         this.dataStore = dataStore
+        
         this.#installEvents()
     }
 
     static create(triggerNode, dataStore) {
         return new Promise((resolve, reject) => {
+            if (triggerNode.dataset.topSheetInstalled == '1') {
+                return reject('Already installed on this node')
+            }
+
             const obj = new TopSheetSelect(triggerNode, dataStore)
             if (!obj.triggerNode.value) {
                 return resolve(obj)
@@ -69,8 +81,9 @@ export default class TopSheetSelect {
     destroy() {
         this.#removeEvents()
         window.requestAnimationFrame(() => {
-            if (this.#copyNode && this.#copyNode.parentNode) { this.#copyNode.remove() }
+            if (this.#copyNode && this.#copyNode.parentNode)       { this.#copyNode.remove()    }
             if (this.#opacityNode && this.#opacityNode.parentNode) { this.#opacityNode.remove() }
+            if (this.#hiddenInput && this.#hiddenInput.parentNode) { this.#hiddenInput.remove() } 
         })
     }
 
@@ -499,9 +512,13 @@ export default class TopSheetSelect {
                 score = 0.5 + (text.length / 10)
             } else {
                 const gramsAvailable = this.#itemNGrams.get(node.id)
-                const commun = gramsAvailable.filter(n => searchGramsSet.has(n)).length
-                const union = new Set([...gramsAvailable, ...searchGrams]).size
-                score = commun / union
+                if (gramsAvailabe.length == 0) {
+                    score = 0
+                } else {
+                    const commun = gramsAvailable.filter(n => searchGramsSet.has(n)).length
+                    const union = new Set([...gramsAvailable, ...searchGrams]).size
+                    score = commun / union
+                }
             }
 
             if (score  > 0.15) {
