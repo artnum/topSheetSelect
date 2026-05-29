@@ -37,6 +37,9 @@ export default class TopSheetSelect {
         }
 
         this.#coverRatio = config.coverRatio ?? 0.9
+        if (this.#coverRatio < 0.3 || this.#coverRatio > 1.0) {
+            this.#coverRatio = 0.9
+        }
         this.myId = ++TopSheetSelect.#idCounter
         
         this.#hiddenInput = document.createElement('input')
