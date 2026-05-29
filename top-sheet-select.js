@@ -18,12 +18,13 @@ export default class TopSheetSelect {
     #eventAbortController = null
     #itemNGrams = new Map()
     #mutObserver = null
+    #coverRatio = 0.9
     
     /**
      * @param {HTMLElement} triggerNode
      * @param {Function} dataLoadCallback
      */
-    constructor(triggerNode, dataStore) {
+    constructor(triggerNode, dataStore, config = {coverRatio: 0.9}) {
         if (!(triggerNode instanceof HTMLElement)) {
             throw new Error('Expect triggerNode to be HTMLElement')
         }
@@ -35,6 +36,7 @@ export default class TopSheetSelect {
             throw new Error('Already installed on this node')
         }
 
+        this.#coverRatio = config.coverRatio ?? 0.9
         this.myId = ++TopSheetSelect.#idCounter
         
         this.#hiddenInput = document.createElement('input')
@@ -60,13 +62,13 @@ export default class TopSheetSelect {
         this.#installEvents()
     }
 
-    static create(triggerNode, dataStore) {
+    static create(triggerNode, dataStore, config = {coverRatio: 0.9} ) {
         return new Promise((resolve, reject) => {
             if (triggerNode.dataset.topSheetInstalled == '1') {
                 return reject(new Error('Already installed on this node'))
             }
 
-            const obj = new TopSheetSelect(triggerNode, dataStore)
+            const obj = new TopSheetSelect(triggerNode, dataStore, config)
             if (!obj.triggerNode.value) {
                 return resolve(obj)
             }
@@ -438,7 +440,7 @@ export default class TopSheetSelect {
     #computeDimensions() {
         const triggerNodeRect = this.triggerNode.getBoundingClientRect()
         return {
-            height: (window.visualViewport.height - triggerNodeRect.height) * 0.9,
+            height: (window.visualViewport.height - triggerNodeRect.height) * this.#coverRatio,
             left: triggerNodeRect.left,
             top: triggerNodeRect.height, 
             width: triggerNodeRect.width,

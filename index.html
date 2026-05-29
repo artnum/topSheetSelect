@@ -148,9 +148,8 @@ porta maximus.</p>
         .then(bs => {
             console.log(bs)
         })
-        TopSheetSelect.create(document.getElementById('myButton2'), new DataStore())
+        TopSheetSelect.create(document.getElementById('myButton2'), new DataStore(), {coverRatio: 0.5})
         .then(bs => {
-            bs.destroy()
         })
         TopSheetSelect.create(document.getElementById('myButton3'), new DataStore())
     })
