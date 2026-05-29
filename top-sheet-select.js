@@ -36,7 +36,7 @@ export default class TopSheetSelect {
         Object.assign(this.#hiddenInput.style, {
             display: 'none'
         })
-        this.#hiddenInput.name = triggerNode.name ?? triggerNode.id
+        this.#hiddenInput.name = triggerNode.name || triggerNode.id || `topSheetField-${this.myId}` 
 
         triggerNode.parentNode.insertBefore(this.#hiddenInput, triggerNode.nextElementSibling)
         this.triggerNode = triggerNode
@@ -240,14 +240,12 @@ export default class TopSheetSelect {
 
     selectItem(event) {
         if (!(event.target instanceof HTMLElement)) { return }
-        if (!event.target.dataset.effectiveValue) { return }
-        const value = event.target.dataset.effectiveValue
-        this.setDisplayValue({displayName: event.target.innerHTML})
-        const changeEvent = new Event("change")
-        Object.assign(changeEvent, {
-            value: value
-        })
-        this.#hiddenInput.setAttribute('value', value)
+        const item = event.target.closest('.top-sheet-item')
+        if (!item.dataset.effectiveValue) { return }
+        const value = item.dataset.effectiveValue
+        this.setDisplayValue({displayName: item.innerHTML})
+        this.#hiddenInput.value = value
+        const changeEvent = new CustomEvent("change", { detail : { value }, bubbles: true })
         this.triggerNode.dispatchEvent(changeEvent)
         this.hide()
     }
@@ -376,6 +374,10 @@ export default class TopSheetSelect {
                             if (value) {
                                 value.innerHTML = currentSelected.innerHTML
                             }
+                            const changeEvent = new CustomEvent("change",
+                                                                { detail: { value: currentSelected.dataset.effectiveValue},
+                                                                  bubbles: true })
+                            this.triggerNode.dispatchEvent(changeEvent)
                             this.toggle()
                         }
                     } return
@@ -399,9 +401,9 @@ export default class TopSheetSelect {
             this.#showing = false
             this.triggerNode.setAttribute('aria-expanded', 'false')
             window.requestAnimationFrame(() => {
-                if (this.#dataNode) { this.#dataNode.remove() }
+                if (this.#dataNode)    { this.#dataNode.remove()    }
                 if (this.#opacityNode) { this.#opacityNode.remove() } 
-                if (this.#copyNode) { this.#copyNode.remove() }
+                if (this.#copyNode)    { this.#copyNode.remove()    }
                 this.#domNode.remove()
                 resolve()
             })
@@ -427,8 +429,8 @@ export default class TopSheetSelect {
         return new Promise((resolve, _) => {
             window.requestAnimationFrame(() => {
                 if (!this.#opacityNode.parentNode) { document.body.appendChild(this.#opacityNode) }
-                if (!this.#copyNode.parentNode) { document.body.appendChild(this.#copyNode) }
-                if (!this.#domNode.parentNode) { document.body.appendChild(this.#domNode) }
+                if (!this.#copyNode.parentNode)    { document.body.appendChild(this.#copyNode)    }
+                if (!this.#domNode.parentNode)     { document.body.appendChild(this.#domNode)     }
                 
                 const widthString = `${dimensions.width}px`
                 const leftString = `${(window.visualViewport.width / 2) - (dimensions.width / 2)}px`
