@@ -17,6 +17,7 @@ export default class TopSheetSelect {
     #previousScrollY = 0
     #eventAbortController = null
     #itemNGrams = new Map()
+    #mutObserver = null
     
     /**
      * @param {HTMLElement} triggerNode
@@ -59,7 +60,7 @@ export default class TopSheetSelect {
     static create(triggerNode, dataStore) {
         return new Promise((resolve, reject) => {
             if (triggerNode.dataset.topSheetInstalled == '1') {
-                return reject('Already installed on this node')
+                return reject(new Error('Already installed on this node'))
             }
 
             const obj = new TopSheetSelect(triggerNode, dataStore)
@@ -129,6 +130,7 @@ export default class TopSheetSelect {
                 })
         })
         mutObserver.observe(this.triggerNode.parentElement, {childList: true})
+        this.#mutObserver = mutObserver
 
         this.#eventAbortController = new AbortController()
         window.visualViewport.addEventListener('resize',  this.#debounce(this.#resizeEventHandler.bind(this), 100), {signal: this.#eventAbortController.signal})
@@ -138,6 +140,9 @@ export default class TopSheetSelect {
     #removeEvents() {
         if (!this.#eventAbortController) { return }
         this.#eventAbortController.abort()
+        if (this.#mutObserver) {
+            this.#mutObserver.disconnect(this.triggerNode)
+        }
     }
 
     #markNodeSelected(node) {
