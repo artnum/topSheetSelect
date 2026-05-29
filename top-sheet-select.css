@@ -83,7 +83,4 @@
     top: 0px;
     left: 0px;
     position: fixed;
-    pointer-events: none;
-    user-select: none;
-    touch-action: none;
 }

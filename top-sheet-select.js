@@ -54,6 +54,9 @@ export default class TopSheetSelect {
         
         this.dataStore = dataStore
         
+        /* create now opacityNode so we can install event */
+        this.#opacityNode = document.createElement('DIV')
+
         this.#installEvents()
     }
 
@@ -135,6 +138,7 @@ export default class TopSheetSelect {
         this.#eventAbortController = new AbortController()
         window.visualViewport.addEventListener('resize',  this.#debounce(this.#resizeEventHandler.bind(this), 100), {signal: this.#eventAbortController.signal})
         this.triggerNode.addEventListener('click', event => this.toggle(event), {signal: this.#eventAbortController.signal})
+        this.#opacityNode.addEventListener('click', event => this.hide(),{signal: this.#eventAbortController.signal}) 
     }
     
     #removeEvents() {
@@ -335,7 +339,6 @@ export default class TopSheetSelect {
                 return resolve(this.#domNode)
             }
 
-            this.#opacityNode = document.createElement('DIV')
             this.#opacityNode.classList.add('top-sheet-opacity-node')
             this.#copyNode = this.triggerNode.cloneNode(true)
             this.#copyNode.removeAttribute('id')
