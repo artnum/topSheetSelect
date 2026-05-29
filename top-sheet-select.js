@@ -15,8 +15,8 @@ export default class TopSheetSelect {
     #copyNode = null
     #dataNode = null
     #previousScrollY = 0
-    #vkeyboardResizeTimeout = null
     #eventAbortController = null
+    #itemNGrams = new Map()
     
     /**
      * @param {HTMLElement} triggerNode
@@ -31,7 +31,6 @@ export default class TopSheetSelect {
         }
         
         this.myId = ++TopSheetSelect.#idCounter
-        
         
         this.#hiddenInput = document.createElement('input')
         Object.assign(this.#hiddenInput.style, {
@@ -106,6 +105,18 @@ export default class TopSheetSelect {
     
     #installEvents() {
         if (this.#eventAbortController) { return }
+        const mutObserver = new MutationObserver(mutList => {
+            mutList.filter(m => m.removedNodes.length > 0)
+                .forEach(m => {
+                    const r = new Set(m.removedNodes)
+                    if (r.has(this.triggerNode)) {
+                        this.destroy()
+                        return
+                    }
+                })
+        })
+        mutObserver.observe(this.triggerNode.parentElement, {childList: true})
+
         this.#eventAbortController = new AbortController()
         window.visualViewport.addEventListener('resize',  this.#debounce(this.#resizeEventHandler.bind(this), 100), {signal: this.#eventAbortController.signal})
         this.triggerNode.addEventListener('click', event => this.toggle(event), {signal: this.#eventAbortController.signal})
@@ -124,7 +135,13 @@ export default class TopSheetSelect {
         }
         node.classList.add('selected')
         node.setAttribute('aria-selected', 'true')
-        this.#domNode.firstElementChild.setAttribute('aria-activedescendant', node.id)
+        this.#getSearchInput().setAttribute('aria-activedescendant', node.id)
+    }
+
+    #getSearchInput() {
+        if (this.#domNode) {
+            return this.#domNode.querySelector('input')
+        }
     }
 
     /**
@@ -146,9 +163,9 @@ export default class TopSheetSelect {
             this.triggerNode.setAttribute('aria-expanded', 'true')
             this.#applyDimensions(this.#computeDimensions())
             .then(_ => {
-                this.#domNode.firstElementChild.focus()
+                this.#getSearchInput().focus()
                 if (selectedNode) {
-                    this.#domNode.firstElementChild.setAttribute('aria-activedescendant', selectedNode.id)
+                    this.#getSearchInput().setAttribute('aria-activedescendant', selectedNode.id)
                     this.#scrollIntoView(selectedNode)
                 }
             })
@@ -192,6 +209,9 @@ export default class TopSheetSelect {
                     itemNode.setAttribute('aria-selected', 'false')
                 }
                 itemNode.setAttribute('role', 'option')
+                const grams = this.#generate2Grams(itemNode.dataset.filterValue)
+                this.#itemNGrams.set(itemNode.id, grams)
+                
                 dataNode.appendChild(itemNode)
             })
             dataNode.addEventListener('click', (event) => {
@@ -235,14 +255,15 @@ export default class TopSheetSelect {
     #getNextSelectable() {
         let startPoint = this.#domNode.querySelector('.selected')
         if (!startPoint) {
-            startPoint = this.#domNode.lastElementChild.firstElementChild
+            startPoint = this.#dataNode.firstElementChild
             if (startPoint.style.display != 'none' && !startPoint.dataset.separator) { return startPoint }
         }
+        if (!startPoint) { return }
         let node = startPoint
         do {
             node = node.nextElementSibling
             if (!node) {
-                node = this.#domNode.lastElementChild.firstElementChild
+                node = this.#dataNode.firstElementChild
             }
             if (node.style.display != 'none' && !node.dataset.separator ) { break }
         } while(node != startPoint)
@@ -264,14 +285,15 @@ export default class TopSheetSelect {
     #getPreviousSelectable() {
         let startPoint = this.#domNode.querySelector('.selected')
         if (!startPoint) {
-            startPoint = this.#domNode.lastElementChild.lastElementChild
+            startPoint = this.#dataNode.lastElementChild
             if (startPoint.style.display != 'none' && !startPoint.dataset.separator) { return startPoint }
         }
+        if (!startPoint) { return }
         let node = startPoint
         do {
             node = node.previousElementSibling
             if (!node) {
-                node = this.#domNode.lastElementChild.lastElementChild
+                node = this.#dataNode.lastElementChild
             }
             if (node.style.display != 'none' && !node.dataset.separator) { break }
         } while(node != startPoint)
@@ -293,7 +315,7 @@ export default class TopSheetSelect {
         const { signal } = this.#eventAbortController
         return new Promise((resolve, reject) => {
             if (this.#domNode instanceof HTMLElement) {
-                this.#domNode.firstElementChild.value = ''
+                this.#getSearchInput().value = ''
                 return resolve(this.#domNode)
             }
 
@@ -330,8 +352,6 @@ export default class TopSheetSelect {
                     case 'ArrowUp': 
                     case 'Enter': 
                     case 'Escape':
-                    case 'End':
-                    case 'Home':
                         event.preventDefault()
                         return 
                 }
@@ -351,7 +371,7 @@ export default class TopSheetSelect {
                         event.preventDefault()
                         const currentSelected = this.#domNode.querySelector('.selected')
                         if (currentSelected) {
-                            this.triggerNode.value = currentSelected.dataset.effectiveValue
+                            this.#hiddenInput.value = currentSelected.dataset.effectiveValue
                             const value = this.triggerNode.querySelector('.value')
                             if (value) {
                                 value.innerHTML = currentSelected.innerHTML
@@ -437,20 +457,24 @@ export default class TopSheetSelect {
     #generate2Grams(str) {
         const grams = []
 
-        const firstLetter = str[0]
-        const l = str.slice(1).replace(/[aeiouy]/g, '')
+        str.split(' ')
+           .forEach(str => {
+                if (str.length == 0) { return }
+                const firstLetter = str[0]
+                const l = str.slice(1).replace(/[aeiouy]/g, '')
 
-        str =  firstLetter + l
-        for(let i = 0; i < str.length - 1; i++) {
-            grams.push(str.slice(i, i+2))
-        }
+                str =  firstLetter + l
+                for(let i = 0; i < str.length - 1; i++) {
+                    grams.push(str.slice(i, i+2))
+                }
+            })
         return grams
     }
 
     /**
      */
     filter(text) {
-        const dataNode = this.#domNode.lastElementChild
+        const dataNode = this.#dataNode
         const hideNodes = []
         const showNodes = []
         text = this.#normalize(text)
@@ -472,7 +496,7 @@ export default class TopSheetSelect {
             } else if (v.includes(text)) {
                 score = 0.5 + (text.length / 10)
             } else {
-                const gramsAvailable = this.#generate2Grams(v)
+                const gramsAvailable = this.#itemNGrams.get(node.id)
                 const commun = gramsAvailable.filter(n => searchGramsSet.has(n)).length
                 const union = new Set([...gramsAvailable, ...searchGrams]).size
                 score = commun / union
