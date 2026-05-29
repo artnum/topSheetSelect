@@ -102,10 +102,12 @@ Creates a new `TopSheetSelect` instance.
 
 **Behavior:**
 - Validates that `triggerNode` is an `HTMLElement` and `dataStore` is an object (throws otherwise).
+- Prevents double initialization on the same element (throws if `dataset.topSheetInstalled === '1'`).
 - Creates a hidden `<input>` (used for form submission and the actual value).
 - Assigns a unique internal `myId`.
 - Sets ARIA attributes on the trigger (`role="combobox"`, `aria-haspopup="listbox"`, `aria-expanded`, etc.).
 - Installs event listeners (click + mutation observer + viewport resize).
+- Marks the trigger with `data-topSheetInstalled="1"`.
 
 **Throws:**
 - `Error` if `triggerNode` is not an `HTMLElement`.
@@ -124,6 +126,7 @@ Async factory method. Preferred way to instantiate the component.
 **Returns:** `Promise<TopSheetSelect>` that resolves once the component is ready.
 
 **Special behavior:**
+- Rejects with an `Error` if the trigger is already initialized.
 - If the trigger already has a `.value` (or `value` attribute), it calls `dataStore.get()` to fetch the corresponding item and calls `setDisplayValue()` to restore the visual label.
 - If no value or the value is not found, it calls `reset()`.
 
@@ -144,8 +147,8 @@ Completely tears down the component.
 
 **Actions performed:**
 - Removes all event listeners via the internal `AbortController`.
-- Removes the dynamically created overlay nodes (`#opacityNode`, `#copyNode`) on the next animation frame.
-- The hidden input is left in the DOM (it is inserted before the trigger).
+- Disconnects the internal `MutationObserver`.
+- Removes the dynamically created overlay nodes (`#opacityNode`, `#copyNode`, and the hidden input) on the next animation frame.
 
 **Important:** After calling `destroy()`, the instance should no longer be used.
 
@@ -234,10 +237,11 @@ selectItem(event: MouseEvent): void
 Handles click selection of an item in the list.
 
 **Behavior:**
-- Ignores clicks that are not on elements with `data-effective-value`.
-- Sets the hidden input's value.
-- Updates the trigger's display value.
-- Dispatches a synthetic `change` event on the trigger (with `.value` property set).
+- Uses `event.target.closest('.top-sheet-item')` to support rich HTML content inside items.
+- Safely ignores clicks that do not land on a valid item.
+- Sets the hidden input's value (via `setAttribute('value', ...)` for DevTools visibility).
+- Updates the trigger's display value (preserving rich HTML).
+- Dispatches a `CustomEvent("change", { detail: { value }, bubbles: true })` on the trigger.
 - Automatically closes the sheet via `hide()`.
 
 ---
@@ -285,6 +289,7 @@ Creates (or reuses) the main sheet container, including the search input.
 - Clones the trigger for visual continuity (`#copyNode`).
 - Creates the search `<input>` with extensive ARIA attributes.
 - Wires `keyup` (filtering) and `keydown` (navigation + Enter/Escape) handlers.
+- On Enter: updates the hidden input and trigger display, dispatches `CustomEvent("change", { detail: { value }, bubbles: true })`, then closes the sheet.
 - Returns an already existing sheet if the component is being reopened (just clears the search field).
 
 ---
@@ -355,6 +360,7 @@ All listeners are attached with an `AbortController` signal for clean removal.
 ### #removeEvents()
 
 Aborts the `AbortController`, removing all listeners installed by `#installEvents()`.
+Disconnects the internal `MutationObserver` if present.
 
 ### #markNodeSelected(node)
 
@@ -458,4 +464,4 @@ select.destroy();
 
 ---
 
-*Generated from source — top-sheet-select.js*
+*Documentation updated to match current source — top-sheet-select.js*
