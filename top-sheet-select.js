@@ -141,7 +141,7 @@ export default class TopSheetSelect {
         if (!this.#eventAbortController) { return }
         this.#eventAbortController.abort()
         if (this.#mutObserver) {
-            this.#mutObserver.disconnect(this.triggerNode)
+            this.#mutObserver.disconnect()
         }
     }
 
