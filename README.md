@@ -13,6 +13,8 @@ Transforms any element into an accessible combobox that opens a searchable list 
 - Full keyboard navigation (arrows, Enter, Escape)
 - Rich HTML support inside options (with separate `filterValue` for searching)
 - Section separators / headers
+- Configurable sheet height via `coverRatio` option
+- Clickable backdrop to dismiss the sheet
 - Proper lifecycle management (`destroy()`, double-init protection)
 - Clean ARIA combobox pattern
 - Uses the Visual Viewport API for reliable behavior with mobile keyboards
@@ -51,6 +53,9 @@ class MyDataStore {
 const trigger = document.getElementById('my-select');
 const select = await TopSheetSelect.create(trigger, new MyDataStore());
 
+// With custom height (optional)
+const selectCompact = await TopSheetSelect.create(trigger, store, { coverRatio: 0.6 });
+
 // Later, when you're done:
 select.destroy();
 ```
@@ -70,6 +75,7 @@ Full API reference, DataStore contract, Item shape, keyboard behavior, and acces
 - Filtering happens live as the user types.
 - Selection can be made by click, keyboard, or programmatically.
 - The component cleans up after itself when destroyed.
+- The backdrop overlay is clickable to close the sheet.
 
 ## Browser Support
 

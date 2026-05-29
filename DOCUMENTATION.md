@@ -86,10 +86,14 @@ interface Item {
 
 ## Constructor & Lifecycle
 
-### constructor(triggerNode, dataStore)
+### constructor(triggerNode, dataStore, config?)
 
 ```ts
-constructor(triggerNode: HTMLElement, dataStore: DataStore)
+constructor(
+  triggerNode: HTMLElement,
+  dataStore: DataStore,
+  config?: { coverRatio?: number }
+)
 ```
 
 Creates a new `TopSheetSelect` instance.
@@ -99,6 +103,7 @@ Creates a new `TopSheetSelect` instance.
 |------|------|-------------|
 | `triggerNode` | `HTMLElement` | The element that will act as the combobox trigger. Must already exist in the DOM. |
 | `dataStore` | `DataStore` | Object implementing `list()` and `get()`. |
+| `config` (optional) | `{ coverRatio?: number }` | Configuration object. `coverRatio` controls the height of the sheet as a fraction of the available viewport space below the trigger (clamped between 0.3 and 1.0). Default: `0.9`. |
 
 **Behavior:**
 - Validates that `triggerNode` is an `HTMLElement` and `dataStore` is an object (throws otherwise).
@@ -108,6 +113,7 @@ Creates a new `TopSheetSelect` instance.
 - Sets ARIA attributes on the trigger (`role="combobox"`, `aria-haspopup="listbox"`, `aria-expanded`, etc.).
 - Installs event listeners (click + mutation observer + viewport resize).
 - Marks the trigger with `data-topSheetInstalled="1"`.
+- The backdrop overlay is clickable to close the sheet.
 
 **Throws:**
 - `Error` if `triggerNode` is not an `HTMLElement`.
@@ -115,15 +121,24 @@ Creates a new `TopSheetSelect` instance.
 
 ---
 
-### static create(triggerNode, dataStore)
+### static create(triggerNode, dataStore, config?)
 
 ```ts
-static create(triggerNode: HTMLElement, dataStore: DataStore): Promise<TopSheetSelect>
+static create(
+  triggerNode: HTMLElement,
+  dataStore: DataStore,
+  config?: { coverRatio?: number }
+): Promise<TopSheetSelect>
 ```
 
 Async factory method. Preferred way to instantiate the component.
 
 **Returns:** `Promise<TopSheetSelect>` that resolves once the component is ready.
+
+**Parameters:**
+| Name | Type | Description |
+|------|------|-------------|
+| `config` (optional) | `{ coverRatio?: number }` | Same as the constructor `config` parameter. Controls sheet height ratio. |
 
 **Special behavior:**
 - Rejects with an `Error` if the trigger is already initialized.
@@ -385,6 +400,9 @@ Returns the previous keyboard-focusable item. Wraps around.
 
 Calculates the target geometry for the sheet based on the trigger's position and the visual viewport.
 
+The sheet height is determined by `coverRatio` (see constructor/config):  
+`height = (viewportHeight - triggerHeight) * coverRatio`
+
 **Returns:** An object with `height`, `left`, `top`, `width`.
 
 ### #applyDimensions(dimensions)
@@ -420,7 +438,7 @@ These grams are stored per item and used during filtering.
 | `Escape` | Sheet open | Close sheet (toggle behavior) |
 | Any printable key | Sheet open | Filter the list (debounced via keyup) |
 
-Clicking outside the sheet (on the cloned trigger or the backdrop) closes it.
+Clicking the backdrop (the blurred full-screen overlay) or the cloned trigger closes the sheet. The backdrop is interactive by default.
 
 ---
 
@@ -464,4 +482,4 @@ select.destroy();
 
 ---
 
-*Documentation updated to match current source — top-sheet-select.js*
+*Documentation updated to reflect the latest changes (coverRatio config + backdrop interaction) — top-sheet-select.js*
